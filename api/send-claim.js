@@ -1,39 +1,44 @@
 // api/send-claim.js  — Vercel Serverless Function
-// Place at: /api/send-claim.js in the movers-of-san-antonio repo root
-
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { customerName, customerEmail, jobDate } = req.body;
-
-  if (!customerName || !customerEmail || !jobDate) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  // ── 1. Send email ────────────────────────────────────────────────────────
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'claims.mosa@gmail.com',
-      pass: process.env.CLAIMS_EMAIL_PASS
+  try {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
     }
-  });
 
-  const pdfPath = path.join(process.cwd(), 'public', 'claim-form.pdf');
-  const pdfBuffer = fs.readFileSync(pdfPath);
+    const { customerName, customerEmail, jobDate } = req.body;
 
-  const formattedDate = new Date(jobDate + 'T12:00:00').toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric'
-  });
+    if (!customerName || !customerEmail || !jobDate) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-  const emailBody = `Dear ${customerName},
+    // Guard: env var check
+    if (!process.env.CLAIMS_EMAIL_PASS) {
+      console.error('CLAIMS_EMAIL_PASS env var is not set');
+      return res.status(500).json({ error: 'Email not configured on server — contact admin' });
+    }
+
+    // ── 1. Send email ────────────────────────────────────────────────────────
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'claims.mosa@gmail.com',
+        pass: process.env.CLAIMS_EMAIL_PASS
+      }
+    });
+
+    const pdfPath = path.join(process.cwd(), 'public', 'claim-form.pdf');
+    const pdfBuffer = fs.readFileSync(pdfPath);
+
+    const formattedDate = new Date(jobDate + 'T12:00:00').toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric'
+    });
+
+    const emailBody = `Dear ${customerName},
 
 Thank you for contacting Movers of San Antonio. We have received your request to file a claim regarding your move on ${formattedDate}.
 
@@ -53,35 +58,40 @@ TxDMV No. 006770930C
 (210) 348-8199
 claims.mosa@gmail.com`;
 
-  await transporter.sendMail({
-    from: '"Movers of San Antonio Claims" <claims.mosa@gmail.com>',
-    to: customerEmail,
-    subject: `Movers of San Antonio — Claim Form for Your Move on ${formattedDate}`,
-    text: emailBody,
-    attachments: [
-      {
-        filename: 'MOSA-Claim-Form.pdf',
-        content: pdfBuffer,
-        contentType: 'application/pdf'
-      }
-    ]
-  });
-
-  // ── 2. Log to Supabase ───────────────────────────────────────────────────
-  try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_KEY
-    );
-    await supabase.from('claim_sends').insert({
-      customer_name:  customerName,
-      customer_email: customerEmail,
-      job_date:       jobDate,
-      sent_at:        new Date().toISOString()
+    await transporter.sendMail({
+      from: '"Movers of San Antonio Claims" <claims.mosa@gmail.com>',
+      to: customerEmail,
+      subject: `Movers of San Antonio — Claim Form for Your Move on ${formattedDate}`,
+      text: emailBody,
+      attachments: [
+        {
+          filename: 'MOSA-Claim-Form.pdf',
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
     });
-  } catch (logErr) {
-    console.error('Supabase log error:', logErr.message);
-  }
 
-  return res.status(200).json({ success: true });
+    // ── 2. Log to Supabase ───────────────────────────────────────────────────
+    try {
+      const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_KEY
+      );
+      await supabase.from('claim_sends').insert({
+        customer_name:  customerName,
+        customer_email: customerEmail,
+        job_date:       jobDate,
+        sent_at:        new Date().toISOString()
+      });
+    } catch (logErr) {
+      console.error('Supabase log error:', logErr.message);
+    }
+
+    return res.status(200).json({ success: true });
+
+  } catch (err) {
+    console.error('send-claim error:', err.message || err);
+    return res.status(500).json({ error: err.message || 'Server error — please try again' });
+  }
 }
