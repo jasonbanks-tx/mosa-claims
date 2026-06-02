@@ -37,7 +37,34 @@ export default async function handler(req, res) {
       month: 'long', day: 'numeric', year: 'numeric'
     });
 
-    const emailBody = `Dear ${customerName},
+    const htmlBody = `
+<div style="font-family: Arial, sans-serif; font-size: 15px; color: #222; max-width: 620px; line-height: 1.6;">
+  <p>Dear ${customerName},</p>
+
+  <p>Thank you for contacting Movers of San Antonio regarding your move on ${formattedDate}. We have received your request to file a claim for loss or damage.</p>
+
+  <p>Please find the attached Claim for Loss and Damage form. Complete the form with as much detail as possible and return it to us by:</p>
+
+  <ul>
+    <li>Email: <a href="mailto:claims.mosa@gmail.com">claims.mosa@gmail.com</a></li>
+    <li>Mail: 6977 San Pedro Ave, San Antonio, TX 78216</li>
+  </ul>
+
+  <p>If you have any questions, please reply to this email or call us at (210) 348-8199.</p>
+
+  <p>Sincerely,<br>
+  Claims Department<br>
+  Movers of San Antonio<br>
+  TxDMV No. 006770930C<br>
+  (210) 348-8199<br>
+  claims.mosa@gmail.com</p>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+
+  <p style="font-size: 8px; color: #999; line-height: 1.4;">Household goods carriers have 90 days from receipt of a claim to pay, decline to pay, or make a firm settlement offer, in writing, to a claimant. Questions or complaints concerning the household goods carrier's claims handling should be directed to the Texas Department of Motor Vehicles (TxDMV), Enforcement Division, via the toll-free consumer helpline as listed on the department's website. Additionally, a claimant has the right to request mediation from TxDMV within 35 days after any portion of the claim is denied by the carrier, the carrier makes a firm settlement offer that is not acceptable to the claimant, or 90 days has elapsed since the carrier received the claim and the claim has not been resolved. (43 TAC §218.61(b)(1)(A))</p>
+</div>`;
+
+    const textBody = `Dear ${customerName},
 
 Thank you for contacting Movers of San Antonio regarding your move on ${formattedDate}. We have received your request to file a claim for loss or damage.
 
@@ -46,10 +73,6 @@ Please find the attached Claim for Loss and Damage form. Complete the form with 
   • Email: claims.mosa@gmail.com
   • Mail: 6977 San Pedro Ave, San Antonio, TX 78216
 
-NOTICE OF YOUR RIGHTS — REQUIRED BY TEXAS LAW (43 TAC §218.61):
-
-"Household goods carriers have 90 days from receipt of a claim to pay, decline to pay, or make a firm settlement offer, in writing, to a claimant. Questions or complaints concerning the household goods carrier's claims handling should be directed to the Texas Department of Motor Vehicles (TxDMV), Enforcement Division, via the toll-free consumer helpline as listed on the department's website. Additionally, a claimant has the right to request mediation from TxDMV within 35 days after any portion of the claim is denied by the carrier, the carrier makes a firm settlement offer that is not acceptable to the claimant, or 90 days has elapsed since the carrier received the claim and the claim has not been resolved."
-
 If you have any questions, please reply to this email or call us at (210) 348-8199.
 
 Sincerely,
@@ -57,13 +80,17 @@ Claims Department
 Movers of San Antonio
 TxDMV No. 006770930C
 (210) 348-8199
-claims.mosa@gmail.com`;
+claims.mosa@gmail.com
+
+---
+Household goods carriers have 90 days from receipt of a claim to pay, decline to pay, or make a firm settlement offer, in writing, to a claimant. Questions or complaints concerning the household goods carrier's claims handling should be directed to the Texas Department of Motor Vehicles (TxDMV), Enforcement Division, via the toll-free consumer helpline as listed on the department's website. Additionally, a claimant has the right to request mediation from TxDMV within 35 days after any portion of the claim is denied by the carrier, the carrier makes a firm settlement offer that is not acceptable to the claimant, or 90 days has elapsed since the carrier received the claim and the claim has not been resolved. (43 TAC §218.61(b)(1)(A))`;
 
     await transporter.sendMail({
       from: '"Movers of San Antonio Claims" <claims.mosa@gmail.com>',
       to: customerEmail,
       subject: `Movers of San Antonio — Claim Form for Your Move on ${formattedDate}`,
-      text: emailBody,
+      text: textBody,
+      html: htmlBody,
       attachments: [
         {
           filename: 'MOSA-Claim-Form.pdf',
@@ -73,7 +100,6 @@ claims.mosa@gmail.com`;
       ]
     });
 
-    // Log to Supabase
     try {
       const supabase = createClient(
         process.env.SUPABASE_URL,
