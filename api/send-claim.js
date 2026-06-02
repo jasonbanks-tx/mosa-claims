@@ -1,4 +1,5 @@
 // api/send-claim.js  — Vercel Serverless Function
+// Updated: 2026-06-02
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
@@ -16,13 +17,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Guard: env var check
     if (!process.env.CLAIMS_EMAIL_PASS) {
       console.error('CLAIMS_EMAIL_PASS env var is not set');
       return res.status(500).json({ error: 'Email not configured on server — contact admin' });
     }
 
-    // ── 1. Send email ────────────────────────────────────────────────────────
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -72,7 +71,6 @@ claims.mosa@gmail.com`;
       ]
     });
 
-    // ── 2. Log to Supabase ───────────────────────────────────────────────────
     try {
       const supabase = createClient(
         process.env.SUPABASE_URL,
