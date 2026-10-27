@@ -1,5 +1,5 @@
 // api/send-claim.js  — Vercel Serverless Function
-// Updated: 2026-06-02
+// Updated: 2026-10-27 (send log checks its result)
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
@@ -105,12 +105,17 @@ Household goods carriers have 90 days from receipt of a claim to pay, decline to
         process.env.SUPABASE_URL,
         process.env.SUPABASE_KEY
       );
-      await supabase.from('claim_sends').insert({
+      // supabase-js returns { error } instead of throwing, so check it.
+      // Without this check the log failed silently from June to October 2026.
+      const { error: logError } = await supabase.from('claim_sends').insert({
         customer_name:  customerName,
         customer_email: customerEmail,
         job_date:       jobDate,
         sent_at:        new Date().toISOString()
       });
+      if (logError) {
+        console.error('Supabase log error:', logError.message);
+      }
     } catch (logErr) {
       console.error('Supabase log error:', logErr.message);
     }
