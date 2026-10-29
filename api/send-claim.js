@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   <p>Sincerely,<br>
   Claims Department<br>
   Movers of San Antonio<br>
-  TxDMV No. 006770930C<br>
+  TxDMV No. 006770939C<br>
   (210) 348-8199<br>
   claims.mosa@gmail.com</p>
 
@@ -78,7 +78,7 @@ If you have any questions, please reply to this email or call us at (210) 348-81
 Sincerely,
 Claims Department
 Movers of San Antonio
-TxDMV No. 006770930C
+TxDMV No. 006770939C
 (210) 348-8199
 claims.mosa@gmail.com
 
